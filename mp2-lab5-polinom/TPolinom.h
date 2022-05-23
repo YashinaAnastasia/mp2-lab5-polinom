@@ -89,7 +89,7 @@ public:
 	
 	friend std::istream& operator>>(std::istream& in, TPolinom& pol)
 	{
-		std::string str;
+		std::string str; 
 		std::getline(in, str);
 		std::string regex_string = R"(([\+\-]?\d+)(?:\*x\^(\d+))?(?:\*y\^(\d+))?(?:\*z\^(\d+))?)";
 		std::regex pattern(regex_string);

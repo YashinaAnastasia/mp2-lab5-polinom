@@ -41,7 +41,7 @@ public:
 			}
 		}
 		delete pHead;
-		
+		//pFirst = pStop;
 	}
 	
 	THeadList(const THeadList& theList)
@@ -51,6 +51,7 @@ public:
 		pStop = pHead;
 		pCurr = pHead;
 		pPrev = nullptr;
+
 
 		if (pLast != NULL)
 			pLast->pNext = pStop;
