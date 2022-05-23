@@ -5,7 +5,7 @@ struct TNode {
 	T value;
 	TNode* pNext;
 
-	TNode(const T& val = T(), TNode* next = NULL) : value(val), pNext(next) {}
+	TNode(const T& _val = T(), TNode* next = NULL) : value(_val), pNext(next) {}
 };
 
 template <class T>
@@ -14,56 +14,83 @@ protected:
 	TNode<T>* pFirst, * pLast, * pStop, * pCurr, * pPrev;
 	int len;
 
-public:
-	TList(){
-		pFirst = pLast = pCurr = pPrev = pStop = NULL;
+protected:
+	virtual void nulify()
+	{
+		pFirst = pLast = pStop = pCurr = pPrev = nullptr;
 		len = 0;
 	}
 
-	~TList(){
-		while (pFirst != pStop){
-			TNode<T>* del = pFirst;
-			pFirst = pFirst->pNext;
-			delete del;
+public:
+	TList() :pFirst(nullptr), len(0), pLast(nullptr), pStop(nullptr), pCurr(nullptr), pPrev(nullptr) {}
+	
+	TList(const TList& theList) : TList()
+	{
+		for (TNode<T>* aCurrent = theList.pFirst;
+			 aCurrent != theList.pStop;
+			 aCurrent = aCurrent->pNext)
+		{
+			InsLast(aCurrent->value);
 		}
 	}
+	
+	~TList() {
+		Reset();
+		while (pCurr != pStop) {
+			pPrev = pCurr;
+			pCurr = pCurr->pNext;
+			delete pPrev;
+		}
+	}
+	
+	TList& operator=(TList theList)
+	{
+		pFirst = theList.pFirst;
+		pLast = theList.pLast;
+		pStop = theList.pStop;
+		pCurr = theList.pCurr;
+		pPrev = theList.pPrev;
+		len = theList.len;
 
+		theList.nulify();
+
+		return *this;
+	}
+	
 	void InsFirst(T _value) {
-		TNode<T>* p = new TNode<T>(_value, pFirst);
-		pCurr = p;
-		pFirst = p;
+		TNode<T>* pNew = new TNode<T>(_value, pFirst);
+		pFirst = pNew;
 		len++;
-		if (len == 1) { 
-			pLast = pFirst; 
-			pLast->pNext = pStop;
-		}
+		if (len == 1) { pLast = pNew; }
 	}
 
-	void insLast(const T& _value) {
-		TNode<T>* p = new TNode<T>(_value, pStop);
-		if (pLast != pStop) { 
-			pLast->pNext = p;
-			pLast = p;
-		}
-		else { 
-			pFirst = p;
-			pLast = p;
-		}
-		pCurr = p;
+	void InsLast(T _value) {
+		TNode<T>* pNew = new TNode<T>(_value, pStop);
+		if (pLast == pStop)
+			pFirst = pNew;
+		else
+			pLast->pNext = pNew;
+		pLast = pNew;
 		len++;
 	}
 
-	void InsCurr(const T& _value) {
+	void InsCurr(T _value) {
 		if (pCurr == pFirst) {
 			InsFirst(_value);
+			pPrev = pStop;
+			pCurr = pFirst;
 		}
 		else if (pPrev == pLast) {
 			InsLast(_value);
+			pPrev = pLast;
 		}
 		else {
-			TNode<T>* p = new TNode<T>(_value, pCurr);
-			pPrev->pNext = p;
-			pCurr = p;
+			TNode<T>* pNew = new TNode<T>(_value, pCurr);
+			if (pPrev != nullptr)
+			{
+				pPrev->pNext = pNew;
+			}
+			pCurr = pNew;
 			len++;
 		}
 	}
@@ -74,11 +101,17 @@ public:
 				DelFirst();
 			else
 			{
+				if (pCurr == pLast)
+				{
+					pLast = pPrev;
+				}
+
 				TNode<T>* del = pCurr;
 				pCurr = pCurr->pNext;
 				pPrev->pNext = pCurr;
 				delete del;
 				len--;
+				
 			}
 		}
 	}
@@ -87,20 +120,16 @@ public:
 		if (pFirst != pStop) {
 			TNode<T>* del = pFirst;
 			pFirst = pFirst->pNext;
-			pCurr = pFirst;
 			delete del;
 			len--;
-			if (len == 0) { pLast = pStop; }
+			if (len == 0)
+				pLast = pStop;
 		}
 	}
 
 	T GetCurrVal() {
-		if (pCurr != pStop) return pCurr->value;
-		throw "ERROR";
-	}
-
-	bool IsEmpty() {
-		return len == 0;
+		if (pCurr != pStop)
+			return pCurr->value;
 	}
 
 	void Reset() {
@@ -109,13 +138,11 @@ public:
 	}
 
 	void GoNext() {
-		pPrev = pCurr;
-		pCurr = pCurr->pNext;
+		if (pCurr != pStop) {
+			pPrev = pCurr;
+			pCurr = pCurr->pNext;
+		}
 	}
 
-	bool IsEnd() const { 
-		return pCurr == pStop; 
-	}
-
+	bool IsEnd() const { return pCurr == pStop; }
 };
-

@@ -1,122 +1,140 @@
 #pragma once
 #include "THeadList.h"
 #include "TMonom.h"
+#include <iostream>
+#include <regex>
 #include <string>
 
-class TPolinom :
-    public THeadList<TMonom>
-{
+class TPolinom : public THeadList<TMonom> {
+private :
+	void InsFirst(TMonom value) { return __super::InsFirst(value); }
+	void InsLast(TMonom value) { return __super::InsLast(value); }
+	void InsCurr(TMonom value) { return __super::InsCurr(value); }
 public:
-    TPolinom() {
-        TMonom m;
-        pHead->value = m;
-    }
-
-    TPolinom(TPolinom& p){
-        for (p.Reset(); !(p.IsEnd()); p.GoNext()){
-            insLast(p.pCurr->value);
-        }
-    }
-
-    void addMonom(const TMonom m) {
-        if (m.coef == 0) return;
-        if (pLast->value > m) {
-            insLast(m);
-            return;
-        }
-        for (Reset(); !IsEnd(); GoNext()) {
-            if (pCurr->value == m) {
-                pCurr->value.coef += m.coef;
-                if (pCurr->value.coef == 0) {
-                    DelCurr();
-                }
-                return;
-            }
-            if (pCurr->value < m) {
-                InsCurr(m);
-                return;
-            }
-        }
-        InsFirst(m);
-    }
-
-    TPolinom operator=(TPolinom& p) {
-        p.Reset();
-        Reset();
-        while (!IsEnd()) { 
-            DelCurr(); 
-        }
-        while (!p.IsEnd()) { 
-            addMonom(p.GetCurrVal()); 
-            p.GoNext();
-        }
-        return *this;
-    }
-
-    TPolinom operator+ (TPolinom& p) {
-		TPolinom result = *this;
-		p.Reset();
-		result.Reset();
-		while (!p.IsEnd()) {
-			if (result.pCurr->value > p.pCurr->value){
-				result.GoNext();
+	TPolinom() {
+		TMonom m;
+		pHead->value = m;
+	}
+	
+	void AddMonom(const TMonom& m) {
+		if (pLast->value > m) {
+			InsLast(m);
+			return;
+		}
+		for (Reset(); !IsEnd(); GoNext()) {
+			if (pCurr->value == m) {
+				pCurr->value += m;
+				if (pCurr->value.coef == 0)
+					DelCurr();
+				return;
 			}
-			else if (result.pCurr->value < p.pCurr->value) {
-				result.InsCurr(p.pCurr->value);
-				p.GoNext();
-			}
-			else {
-				result.pCurr->value.coef += p.pCurr->value.coef;
-				if (result.pCurr->value.coef != 0) {
-					result.GoNext();
-                    p.GoNext();
-				} else {
-					result.DelCurr();
-                    p.GoNext();
-				}
+			if (m > pCurr->value) {
+				InsCurr(m);
+				return;
 			}
 		}
-		return result;
-    }
 
-	TPolinom operator* (const double coef) {
-		TPolinom result = *this;
-        for (result.Reset(); !result.IsEnd(); result.GoNext()) {
-            result.pCurr->value.coef *= coef;
-        }
-		return result;
+		InsFirst(m);
 	}
-
-    std::string ToString() {
-        std::string result = "";
-
-        if (len == 0)
-            return result;
-        for (Reset(); !IsEnd(); GoNext()) {
-            result += to_string((int)GetCurrVal().coef)
-                + "*x^" + to_string(GetCurrVal().x)
-                + "*y^" + to_string(GetCurrVal().y)
-                + "*z^" + to_string(GetCurrVal().z);
-            if (pCurr->pNext != pStop) {
-                result += '+';
-            }
-        }
-        return result;
-    }
-
-	friend std::ostream& operator<<(std::ostream& os, TPolinom& p)
+	
+	TPolinom operator+(TPolinom pol) const
 	{
-		if (p.len == 0)
-			return os << 0;
-        for (p.Reset(); !p.IsEnd(); p.GoNext()) {
-            if (p.pCurr->pNext == p.pStop) {
-                os << p.GetCurrVal();
-                break;
-            }
-            os << p.GetCurrVal() << "+";
-        }
-		return os;
+		TPolinom res = *this;
+		pol.Reset();
+		res.Reset();
+		while (!pol.IsEnd())
+		{
+			if (res.pCurr->value > pol.pCurr->value)
+			{
+				res.GoNext();
+			}
+			else if (res.pCurr->value < pol.pCurr->value)
+			{
+				res.InsCurr(pol.pCurr->value);
+				pol.GoNext();
+			}
+			else
+			{
+				res.pCurr->value.coef += pol.pCurr->value.coef;
+				if (res.pCurr->value.coef != 0)
+				{
+					res.GoNext();
+				}
+				else
+				{
+					res.DelCurr();
+				}
+				pol.GoNext();
+			}
+		}
+		return res;
+	}
+	
+	template <class T>
+	TPolinom operator*(T coef) const
+	{
+		if (coef == 0)
+			return TPolinom();
+		TPolinom res(*this);
+		for (res.Reset(); !res.IsEnd(); res.GoNext()) {
+			res.pCurr->value *= coef;
+		}
+		return res;
+	}
+	
+	template <class T>
+	TPolinom& operator*=(T coef) {
+		return *this = *this * coef;
+	}
+	
+	friend std::istream& operator>>(std::istream& in, TPolinom& pol)
+	{
+		std::string str;
+		std::getline(in, str);
+		std::string regex_string = R"(([\+\-]?\d+)(?:\*x\^(\d+))?(?:\*y\^(\d+))?(?:\*z\^(\d+))?)";
+		std::regex pattern(regex_string);
+		std::smatch result;
+		for (auto iter = str.cbegin();
+			 iter != str.cend() && std::regex_search(iter, str.cend(), result, pattern);
+			 iter = result[0].second)
+		{
+			int coef = GetNumberFromGroup(result, 1);
+			int x = GetNumberFromGroup(result, 2);
+			int y = GetNumberFromGroup(result, 3);
+			int z = GetNumberFromGroup(result, 4);
+			TMonom aMonom(coef, x, y, z);
+			pol.AddMonom(aMonom);
+		}
+		return in;
+	}
+	
+	friend std::ostream& operator<<(std::ostream& out, const TPolinom& pol)
+	{
+		if (pol.len == 0)
+			return out << 0;
+		if (pol.pFirst != nullptr)
+		{
+			out << pol.pFirst->value;
+			
+			for (auto current = pol.pFirst->pNext; current != pol.pStop; current = current->pNext)
+			{
+				out << (current->value.coef >= 0 ? "+" : "");
+				out << current->value;
+			}
+		}		
+		return out;
 	}
 
+	static int GetNumberFromGroup(const std::smatch& theMatch, int theGroupNumber)
+	{
+		try
+		{
+			std::string match(theMatch[theGroupNumber].first, theMatch[theGroupNumber].second);
+			return std::stoi(match);
+		}
+		catch (...)
+		{
+			return 0;
+		}
+	}
 };
-

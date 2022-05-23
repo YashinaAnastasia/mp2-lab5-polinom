@@ -110,7 +110,6 @@
 #define GTEST_INCLUDE_GTEST_GTEST_SPI_H_
 
 
-
 namespace testing {
 
 // This helper class can be used to mock out Google Test failure reporting
